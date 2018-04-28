@@ -33,6 +33,47 @@ const SetUserName = props => (
     </Layout>
 )
 
+const UserInput = props => (
+    <div>
+        <input
+            type="text"
+            placeholder="Message"
+            value={props.userMessageInput}
+            onChange={props.handleMessageInput}
+        />
+        <br />
+        <button
+            onClick={props.handleMessageSubmit}
+            disabled={props.userMessageInput === ''}
+        >
+            Submit
+        </button>
+    </div>
+)
+
+const Messages = props => (
+    <div>
+        {
+            props.messages.map(
+                message => (
+                    <div>
+                        <p>
+                            <b>
+                                {message.username}
+                            </b>
+                        </p>
+                        <p>
+                            {message.message}
+                        </p>
+                    </div>
+                )
+            )
+        }
+    </div>
+)
+
+
+
 
 
 
@@ -50,10 +91,13 @@ class App extends Component {
             id: null,
             messages: [],
             userInput: '',
-            ws: null
+            ws: null,
+            userMessageInput: ''
         }
         this.handleUsernameChange = this.handleUsernameChange.bind(this)
         this.handleUsernameSubmit = this.handleUsernameSubmit.bind(this)
+        this.handleMessageInput = this.handleMessageInput.bind(this)
+        this.handleMessageSubmit = this.handleMessageSubmit.bind(this)
     }
 
     handleUsernameChange(proxy) {
@@ -68,10 +112,7 @@ class App extends Component {
 
         ws.onopen = function () {
             ws.send(JSON.stringify({
-                user: that.state.username
-            }))
-            ws.send(JSON.stringify({
-                user: that.state.username
+                username: that.state.username
             }))
         }
 
@@ -87,11 +128,22 @@ class App extends Component {
             case 'SET_ID':
                 this.setState({ id: message.payload })
                 break;
+            case 'APPLY_MESSAGE':
+                this.setState({ messages: [...this.state.messages, message.payload] })
+                break;
             default:
                 break;
         }
     }
-
+    handleMessageInput(proxy) {
+        this.setState({ userMessageInput: proxyToValue(proxy) })
+    }
+    handleMessageSubmit() {
+        this.state.ws.send(JSON.stringify({
+            message: this.state.userMessageInput
+        }))
+        this.setState({ userMessageInput: '' })
+    }
     render() {
         if (!this.state.submittedUsername)
             return (
@@ -109,7 +161,14 @@ class App extends Component {
             )
         return (
             <Layout>
-                hi
+                <Messages
+                    messages={this.state.messages}
+                />
+                <UserInput
+                    userMessageInput={this.state.userMessageInput}
+                    handleMessageInput={this.handleMessageInput}
+                    handleMessageSubmit={this.handleMessageSubmit}
+                />
             </Layout>
         )
     }
